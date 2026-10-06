@@ -1,0 +1,53 @@
+{
+  "tables": {
+    "customers": "People who place orders (also: buyers, clients, shoppers).",
+    "categories": "Product categories, lookup table (also: departments).",
+    "products": "Items for sale, each in one category (also: items, goods, merchandise).",
+    "orders": "One row per customer order, order grain (also: purchases).",
+    "order_items": "Line items; junction between orders and products, line grain (also: line items).",
+    "payments": "Payments received for orders (also: transactions).",
+    "reviews": "Customer star ratings of products (also: ratings, feedback)."
+  },
+  "columns": {
+    "customers.id": "Customer id.",
+    "customers.name": "Customer full name.",
+    "customers.email": "Customer email address (PII).",
+    "customers.phone": "Customer phone number (PII).",
+    "customers.country": "Customer country (also: region, nation, location).",
+    "customers.signup_date": "Date the customer registered (also: joined, registration date).",
+    "categories.id": "Category id.",
+    "categories.name": "Category name (also: department, product type).",
+    "products.id": "Product id.",
+    "products.name": "Product name (also: item, title).",
+    "products.category_id": "Category of the product.",
+    "products.price": "Current list price in USD (also: list price, sticker price).",
+    "products.cost": "Unit cost to the business; margin = price - cost (also: unit cost, cogs).",
+    "products.created_at": "Date the product was listed.",
+    "orders.id": "Order id.",
+    "orders.customer_id": "Customer who placed the order.",
+    "orders.order_date": "Date the order was placed (also: purchase date, ordered on).",
+    "orders.shipped_date": "Date the order shipped; NULL if not shipped (also: shipping date, dispatched).",
+    "orders.status": "pending, shipped, delivered, cancelled or returned.",
+    "orders.total_amount": "Order grand total incl. shipping, net of discounts (also: revenue, sales, order value, order total). Use for revenue at ORDER level (by customer, country, month, status). Ambiguous with order_items.line_total.",
+    "order_items.id": "Line item id.",
+    "order_items.order_id": "Parent order.",
+    "order_items.product_id": "Product sold.",
+    "order_items.quantity": "Units sold on this line (also: units, items sold).",
+    "order_items.unit_price": "Price per unit at purchase time (also: price paid, selling price).",
+    "order_items.line_total": "quantity * unit_price, merchandise only (also: revenue, sales, merchandise value, line value). Use for revenue at PRODUCT or CATEGORY level. Ambiguous with orders.total_amount.",
+    "payments.id": "Payment id.",
+    "payments.order_id": "Order that was paid.",
+    "payments.method": "card, paypal, bank_transfer or gift_card (also: payment type, payment method).",
+    "payments.paid_at": "Date of payment (also: payment date).",
+    "payments.amount": "Amount paid in USD.",
+    "reviews.id": "Review id.",
+    "reviews.product_id": "Reviewed product.",
+    "reviews.customer_id": "Reviewer.",
+    "reviews.rating": "Star rating 1-5 (also: score, stars).",
+    "reviews.created_at": "Date the review was written."
+  },
+  "sensitive": [
+    "customers.email",
+    "customers.phone"
+  ]
+}

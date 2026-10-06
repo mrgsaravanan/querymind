@@ -1,0 +1,14 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+SQLAlchemy==2.0.36
+sqlglot==26.0.0
+sqlparse==0.5.3
+chromadb==0.6.3
+tenacity==9.0.0
+python-dotenv==1.0.1
+anthropic==0.42.0
+openai==1.58.1
+httpx==0.28.1
+jinja2==3.1.5
+pytest==8.3.4

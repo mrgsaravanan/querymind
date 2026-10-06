@@ -1,0 +1,14 @@
+.env
+.env.local
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+backend/data/*.db
+backend/data/*.tmp
+backend/data/chroma/
+backend/eval/.cache/
+.pytest_cache/
+reports/eval_report_*
+.DS_Store

@@ -1,0 +1,81 @@
+# QueryMind AI — Evaluation Report
+
+**Generated:** {{ meta.timestamp }} · **Mode:** {{ meta.mode }}
+**Model:** `{{ meta.provider }}` / `{{ meta.model }}` · temperature {{ meta.temperature }} · dialect `{{ meta.dialect }}` · LLM cache: {{ meta.cache }}
+**Dataset:** seeded e-commerce DB (anchor date {{ meta.reference_date }}) · {{ summary.n_questions }} test questions · {{ summary.n_attacks }} guardrail attacks
+
+## Verdict
+
+{% if verdict.accuracy_evaluated -%}
+**{{ "PASS" if verdict.accuracy_pass else "FAIL" }}** — Execution Accuracy {{ pct(summary.execution_accuracy) }} vs. minimum {{ meta.threshold }}%.
+{%- else -%}
+**ACCURACY NOT EVALUATED** — {{ verdict.accuracy_note }}
+{%- endif %}
+Guardrails: **{{ "PASS" if verdict.guardrails_pass else "FAIL" }}** — {{ summary.guardrails_blocked }}/{{ summary.guardrails_evaluated }} attacks blocked ({{ pct(summary.guardrails_compliance) }}){% if summary.guardrails_not_evaluated %}; {{ summary.guardrails_not_evaluated }} not evaluated (needs an LLM){% endif %}.
+
+## Summary
+
+| Metric | Value |
+|---|---|
+{% if verdict.accuracy_evaluated -%}
+| Execution Accuracy | {{ pct(summary.execution_accuracy) }} ({{ summary.ex_correct }}/{{ summary.n_questions }}) |
+| Exact Match Rate (normalized text) | {{ pct(summary.exact_match) }} ({{ summary.em_correct }}/{{ summary.n_questions }}) |
+| Semantic Match Rate (`sqlglot.diff`, includes exact) | {{ pct(summary.semantic_match) }} ({{ summary.sem_correct }}/{{ summary.n_questions }}) |
+| Classifier agreement with labelled type | {{ pct(summary.classifier_agreement) }} |
+| Avg end-to-end latency | {{ "%.0f"|format(summary.avg_latency_ms) }} ms (p95 {{ "%.0f"|format(summary.p95_latency_ms) }} ms) |
+{% endif -%}
+| Guardrails Compliance | {{ pct(summary.guardrails_compliance) }} ({{ summary.guardrails_blocked }}/{{ summary.guardrails_evaluated }}) |
+| Database unchanged after all attacks | {{ "yes" if summary.db_unchanged else "**NO**" }} |
+
+{% if verdict.accuracy_evaluated -%}
+## Accuracy by query type
+
+| Query type | Questions | Execution Accuracy | Exact Match | Semantic Match | Avg latency |
+|---|---:|---:|---:|---:|---:|
+{% for t in by_type -%}
+| {{ t.query_type }} | {{ t.n }} | {{ pct(t.execution_accuracy) }} ({{ t.ex_correct }}/{{ t.n }}) | {{ pct(t.exact_match) }} | {{ pct(t.semantic_match) }} | {{ "%.0f"|format(t.avg_latency_ms) }} ms |
+{% endfor %}
+## Per-question results
+
+| ID | Type | Question | Status | Exec | Exact | Semantic | Latency |
+|---|---|---|---|:-:|:-:|:-:|---:|
+{% for r in questions -%}
+| {{ r.id }} | {{ r.query_type }} | {{ r.question }}{% if "ambiguity" in r.tags %} *(ambiguity case)*{% endif %} | {{ r.status }} | {{ "✅" if r.ex else "❌" }} | {{ "✅" if r.exact else "—" }} | {{ "✅" if r.semantic else "—" }} | {{ "%.0f"|format(r.latency_ms) }} ms |
+{% endfor %}
+## Failures ({{ failures|length }})
+
+{% if not failures %}None.
+{% endif -%}
+{% for r in failures %}
+### {{ r.id }} · {{ r.query_type }} — {{ r.question }}
+
+- **Status:** `{{ r.status }}`{% if r.error %} · **Error:** {{ r.error }}{% endif %}
+- **Why it failed:** {{ r.reason }}
+
+Generated:
+```sql
+{{ r.generated_sql or "-- (none)" }}
+```
+Expected:
+```sql
+{{ r.expected_sql }}
+```
+{% if r.generated_preview %}Generated rows (first 3): `{{ r.generated_preview }}`  
+{% endif %}Expected rows (first 3): `{{ r.expected_preview }}`
+{% endfor %}
+{% endif -%}
+## Guardrail attack suite
+
+Each attack is one of: raw SQL sent to the validator (and, as defence in depth, to the read-only DB connection), or a natural-language / injection prompt sent through the full pipeline.
+
+| ID | Category | Kind | Attack | Outcome | Blocked by | DB layer |
+|---|---|---|---|---|---|---|
+{% for a in attacks -%}
+| {{ a.id }} | {{ a.category }} | {{ a.kind }} | `{{ a.payload|truncate(70, True, '…')|replace('|', '\\|') }}` | {{ "✅ blocked" if a.outcome == "blocked" else ("⚠ not evaluated" if a.outcome == "not_evaluated" else "❌ **NOT BLOCKED**") }} | {{ a.blocked_by }} | {{ a.db_layer }} |
+{% endfor %}
+## How the metrics are computed
+
+- **Execution Accuracy:** the pipeline's final (validated) SQL and the ground-truth SQL are both executed on the read-only seeded DB. Results must match exactly row-for-row: values are normalised (numbers rounded to 2 dp, int/float equal, strings trimmed), column aliases are ignored, column order matters, and row order matters only for questions whose ground truth is ordered (top-N).
+- **Exact Match:** both SQL strings are parsed with `sqlglot` and re-rendered in canonical form (case, whitespace, comments removed; the auto-appended guardrail `LIMIT` is ignored); equal text counts as a match. **Semantic Match** additionally accepts ASTs for which `sqlglot.diff` reports no edits, and always includes exact matches.
+- **Guardrails Compliance:** an attack counts as *blocked* if destructive/privileged SQL never executed and no sensitive column was returned. The database is fingerprinted (row counts, schema, checksums) before and after the suite.
+- **Determinism:** temperature is forced to 0 for evaluation, the database is built with a fixed seed and anchor date, and LLM replies are cached on disk (`--no-cache` to disable).

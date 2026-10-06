@@ -1,0 +1,208 @@
+[
+  {
+    "id": "q01",
+    "question": "List the names and prices of the 5 cheapest products.",
+    "query_type": "SELECT_SIMPLE",
+    "ground_truth_sql": "SELECT name, price FROM products ORDER BY price ASC LIMIT 5",
+    "ordered": true,
+    "tags": []
+  },
+  {
+    "id": "q02",
+    "question": "List the names of all customers from Japan.",
+    "query_type": "SELECT_SIMPLE",
+    "ground_truth_sql": "SELECT name FROM customers WHERE country = 'Japan'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q03",
+    "question": "Which orders have a total above $1500? Show the order id and total.",
+    "query_type": "SELECT_SIMPLE",
+    "ground_truth_sql": "SELECT id, total_amount FROM orders WHERE total_amount > 1500",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q04",
+    "question": "Show the payment id and amount for bank transfer payments over $600.",
+    "query_type": "SELECT_SIMPLE",
+    "ground_truth_sql": "SELECT id, amount FROM payments WHERE method = 'bank_transfer' AND amount > 600",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q05",
+    "question": "List the 5 products with the highest unit cost, showing name and cost.",
+    "query_type": "SELECT_SIMPLE",
+    "ground_truth_sql": "SELECT name, cost FROM products ORDER BY cost DESC LIMIT 5",
+    "ordered": true,
+    "tags": []
+  },
+  {
+    "id": "q06",
+    "question": "How many orders have been delivered?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT COUNT(*) FROM orders WHERE status = 'delivered'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q07",
+    "question": "What is the average product price in each category?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT c.name, ROUND(AVG(p.price), 2) FROM products p JOIN categories c ON c.id = p.category_id GROUP BY c.name",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q08",
+    "question": "How many reviews has each star rating received?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT rating, COUNT(*) FROM reviews GROUP BY rating",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q09",
+    "question": "What is the total amount paid through each payment method?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT method, ROUND(SUM(amount), 2) FROM payments GROUP BY method",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q10",
+    "question": "Which country has the most customers?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT country FROM customers GROUP BY country ORDER BY COUNT(*) DESC LIMIT 1",
+    "ordered": true,
+    "tags": []
+  },
+  {
+    "id": "q11",
+    "question": "What is our total revenue?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT ROUND(SUM(total_amount), 2) FROM orders WHERE status != 'cancelled'",
+    "ordered": false,
+    "tags": [
+      "ambiguity"
+    ]
+  },
+  {
+    "id": "q12",
+    "question": "Which product category earned the least revenue?",
+    "query_type": "SELECT_AGGREGATE",
+    "ground_truth_sql": "SELECT c.name FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN products p ON p.id = oi.product_id JOIN categories c ON c.id = p.category_id WHERE o.status != 'cancelled' GROUP BY c.name ORDER BY SUM(oi.line_total) ASC LIMIT 1",
+    "ordered": true,
+    "tags": [
+      "ambiguity"
+    ]
+  },
+  {
+    "id": "q13",
+    "question": "What are the names of the products in the Books category?",
+    "query_type": "SELECT_JOIN",
+    "ground_truth_sql": "SELECT p.name FROM products p JOIN categories c ON c.id = p.category_id WHERE c.name = 'Books'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q14",
+    "question": "For orders over $1500, show each order id with the name of the customer who placed it.",
+    "query_type": "SELECT_JOIN",
+    "ground_truth_sql": "SELECT o.id, cu.name FROM orders o JOIN customers cu ON cu.id = o.customer_id WHERE o.total_amount > 1500",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q15",
+    "question": "Which customers paid with a gift card for an order over $300? Show distinct customer names.",
+    "query_type": "SELECT_JOIN",
+    "ground_truth_sql": "SELECT DISTINCT cu.name FROM payments pay JOIN orders o ON o.id = pay.order_id JOIN customers cu ON cu.id = o.customer_id WHERE pay.method = 'gift_card' AND pay.amount > 300",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q16",
+    "question": "List the products in order 2404 with their quantities.",
+    "query_type": "SELECT_JOIN",
+    "ground_truth_sql": "SELECT p.name, oi.quantity FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = 2404",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q17",
+    "question": "Show the names of Electronics products that have received a 1-star review, without duplicates.",
+    "query_type": "SELECT_JOIN",
+    "ground_truth_sql": "SELECT DISTINCT p.name FROM reviews r JOIN products p ON p.id = r.product_id JOIN categories c ON c.id = p.category_id WHERE r.rating = 1 AND c.name = 'Electronics'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q18",
+    "question": "Which customers from Germany have placed more than 5 orders? Show the name and number of orders.",
+    "query_type": "SELECT_JOIN",
+    "ground_truth_sql": "SELECT cu.name, COUNT(*) FROM customers cu JOIN orders o ON o.customer_id = cu.id WHERE cu.country = 'Germany' GROUP BY cu.id, cu.name HAVING COUNT(*) > 5",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q19",
+    "question": "How many orders were placed in December 2025?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT COUNT(*) FROM orders WHERE order_date >= '2025-12-01' AND order_date < '2026-01-01'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q20",
+    "question": "What was the total revenue in 2024?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT ROUND(SUM(total_amount), 2) FROM orders WHERE order_date >= '2024-01-01' AND order_date < '2025-01-01' AND status != 'cancelled'",
+    "ordered": false,
+    "tags": [
+      "ambiguity"
+    ]
+  },
+  {
+    "id": "q21",
+    "question": "How many customers signed up in the first half of 2024?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT COUNT(*) FROM customers WHERE signup_date >= '2024-01-01' AND signup_date < '2024-07-01'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q22",
+    "question": "What is the average number of days it took to ship orders placed in 2025?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT ROUND(AVG(julianday(shipped_date) - julianday(order_date)), 2) FROM orders WHERE shipped_date IS NOT NULL AND order_date >= '2025-01-01' AND order_date < '2026-01-01'",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q23",
+    "question": "How many orders were placed in each quarter of 2024?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT (CAST(strftime('%m', order_date) AS INTEGER) + 2) / 3 AS q, COUNT(*) FROM orders WHERE order_date >= '2024-01-01' AND order_date < '2025-01-01' GROUP BY q",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q24",
+    "question": "How many days ago was the most recent order placed?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT CAST(julianday('2025-12-31') - julianday(MAX(order_date)) AS INTEGER) FROM orders",
+    "ordered": false,
+    "tags": []
+  },
+  {
+    "id": "q25",
+    "question": "How many orders were placed last quarter?",
+    "query_type": "SELECT_TEMPORAL",
+    "ground_truth_sql": "SELECT COUNT(*) FROM orders WHERE order_date >= '2025-07-01' AND order_date < '2025-10-01'",
+    "ordered": false,
+    "tags": []
+  }
+]
