@@ -52,3 +52,20 @@ export interface ModelConfig {
   provider: "anthropic" | "claude_cli" | "openai" | "ollama"; model: string; temperature: number;
   dialect: "sqlite" | "postgresql" | "mysql"; max_tokens: number;
 }
+
+export type ColumnType = "INTEGER" | "REAL" | "TEXT" | "DATE" | "DATETIME";
+export const COLUMN_TYPES: ColumnType[] = ["INTEGER", "REAL", "TEXT", "DATE", "DATETIME"];
+
+export interface PreviewColumn {
+  original_name: string; name: string; type: ColumnType; sample_values: string[]; null_count: number;
+  suggested_description: string; suggested_sensitive: boolean; sensitive_reason: string | null;
+}
+export interface PreviewResponse {
+  filename: string; suggested_table_name: string; suggested_table_description: string; delimiter: string; encoding: string;
+  row_count: number; columns: PreviewColumn[]; sample_rows: (string | null)[][]; warnings: string[];
+  name_conflict: boolean; can_replace: boolean;
+}
+export interface ImportColumn { original_name: string; name: string; type: ColumnType; description: string; sensitive: boolean }
+export interface ImportConfig { table_name: string; description: string; mode: "create" | "replace"; columns: ImportColumn[] }
+export interface ImportResult { table: TableInfo; rows_imported: number; replaced: boolean }
+export interface ImportedTableInfo { table_name: string; source_filename: string; row_count: number; created_at: string }

@@ -18,3 +18,8 @@ def create_readonly_engine(db_path: Path | str, dialect: str = "sqlite", url: st
     if not url:
         raise ValueError(f"A connection url (read-only role) is required for dialect {dialect!r}")
     return create_engine(url, future=True)
+
+
+def create_write_engine(db_path: Path | str) -> Engine:
+    """Read-WRITE SQLite engine. Used ONLY by the admin CSV importer; the query path never touches it."""
+    return create_engine(f"sqlite+pysqlite:///{Path(db_path).resolve()}", connect_args={"timeout": 15}, future=True)

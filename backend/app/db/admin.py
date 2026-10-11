@@ -39,6 +39,16 @@ class ExampleMeta(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
+class ImportedTable(Base):
+    """Tables created through the CSV importer. Only these may be replaced or dropped from the UI."""
+
+    __tablename__ = "imported_tables"
+    table_name: Mapped[str] = mapped_column(String, primary_key=True)
+    source_filename: Mapped[str] = mapped_column(String, default="")
+    row_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class KeyValue(Base):
     """JSON blobs for guardrail + model config."""
 

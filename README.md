@@ -118,12 +118,24 @@ and `SELECT email FROM customers` is rejected: *"Column 'customers.email' is sen
 | Panel | What it does |
 |---|---|
 | **Schema** (`/admin/schema`) | Browse tables and columns; edit descriptions inline (use `(also: synonym, …)` to teach the linker aliases); toggle **sensitive** per column. Sensitive columns are removed from every LLM prompt, the linker output, validation and results. |
+| **Tables** (`/admin/tables`) | **Add your own data:** upload a CSV, review detected column types, safe names and suggested descriptions, tick sensitive columns (emails, phones and similar are pre-ticked), then import. The table is queryable immediately. Replace or delete tables you imported; original tables are protected. |
 | **Examples** (`/admin/examples`) | Add / edit / delete few-shot pairs, label them by query type, and run a **semantic search**. Every write re-embeds or removes the vector, and SQL is validated before it is saved. |
 | **Logs** (`/admin/logs`) | Every question with its SQL, status, latency and row count; filter by status, text and date; expand a row for the error and per-stage timings; **export CSV**. |
 | **Guardrails** (`/admin/guardrails`) | Toggle each SQL operation, set the max row limit (1–100,000), restrict allowed table prefixes and schemas. |
 | **Model** (`/admin/model`) | Provider (Anthropic / OpenAI / Ollama), model name, temperature, dialect, max token budget. |
 
 All admin changes persist to `admin.db` and apply to the **next request without a restart** (each request takes a fresh snapshot of schema, guardrails and model config).
+
+### Adding your own tables (CSV import)
+
+Open **Tables** in the Admin UI, choose a CSV (comma, semicolon, tab or pipe separated, header row, up to 10 MB / 100,000 rows) and review the preview:
+
+- **Types** are detected from all rows: `INTEGER`, `REAL`, `DATE` (`YYYY-MM-DD`), `DATETIME`, else `TEXT`. Zip codes and padded ids (`0123`) and very long digit strings stay `TEXT` so nothing is silently altered. Dates in other formats (`31/01/2024`) trigger a warning, because date questions only work with ISO dates.
+- **Names** are rewritten into safe SQL identifiers (`Order Date` becomes `order_date`; words SQLite or `sqlglot` cannot use unquoted, such as `order`, become `order_col`). You can edit them.
+- **Sensitive columns** are suggested from the column name and the values (emails, phone numbers, national IDs) and are pre-ticked. You decide; ticked columns are hidden from every AI prompt, validation and result, exactly like the built-in ones.
+- After importing, add a few example questions for the new subject area and adjust `backend/data/domain_notes.md` (its rules are e-commerce specific).
+
+How it stays safe: parsing is stateless and in memory; every identifier is validated and every value is inserted as a bound parameter, so hostile cell contents are stored as plain text; the import runs in one transaction (all or nothing); only this admin action uses a read-write connection, while the query path stays `mode=ro`; only tables created by the importer can be replaced or deleted. Set `ALLOW_TABLE_IMPORT=false` to disable the feature (for example on a shared deployment). There is no login on the Admin UI, so do not expose this feature to untrusted users.
 
 ## Safety design
 
@@ -198,7 +210,7 @@ Exact/Semantic Match are low by design: the model's SQL is correct but written d
 backend/app/{schemas,pipeline,llm,services,api,db}   typed stages, providers, admin services, routers
 backend/data/                                          schema.sql, seed_db.py, data_dictionary.md, examples_seed.json, domain_notes.md
 backend/eval/                                          test_set.json, guardrail_attacks.json, run_eval.py, metrics.py, report template
-backend/tests/                                         offline pytest suite (135 tests)
+backend/tests/                                         offline pytest suite (190 tests)
 frontend/src/app/                                      chat page + admin/{schema,examples,logs,guardrails,model}
 reports/                                               generated evaluation reports
 ```
@@ -213,6 +225,7 @@ reports/                                               generated evaluation repo
 - **Sensitive-column detection is by flag, not by content:** a sensitive value reachable through a differently named column would not be caught.
 - **Date handling relies on the fixed reference date** passed in the prompt; relative phrases beyond "this/last month, quarter, year" and "last N days" are interpreted by the model.
 - **Explain mode** shows the one-to-two sentence explanation the generator already returns, not a separate step-by-step breakdown.
-- **No authentication** on the API or Admin UI. Do not expose it beyond a trusted network; add auth before any real deployment.
+- **No authentication** on the API or Admin UI, and the CSV importer can create and delete the tables it imported. Do not expose it beyond a trusted network; add auth (or set `ALLOW_TABLE_IMPORT=false`) before any real deployment.
+- **CSV import is SQLite-only and basic:** one table per file, no primary/foreign keys or indexes, no automatic date-format conversion, no append-to-existing mode.
 - **Query timeouts** are implemented for SQLite only.
 - **Future work:** an LLM-assisted linker, per-user permissions and row-level security, answer feedback ("was this right?") feeding the examples library, streaming responses, PostgreSQL/MySQL read-only roles.

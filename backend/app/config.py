@@ -54,6 +54,9 @@ class Settings:
     retriever_top_k: int = 4
     semantic_cache_enabled: bool = field(default_factory=lambda: _env("SEMANTIC_CACHE", "true").lower() in ("1", "true", "yes"))
     semantic_cache_threshold: float = field(default_factory=lambda: float(_env("SEMANTIC_CACHE_THRESHOLD", "0.95")))
+    allow_table_import: bool = field(default_factory=lambda: _env("ALLOW_TABLE_IMPORT", "true").lower() in ("1", "true", "yes"))
+    import_max_bytes: int = field(default_factory=lambda: int(_env("IMPORT_MAX_BYTES", str(10 * 1024 * 1024))))
+    import_max_rows: int = field(default_factory=lambda: int(_env("IMPORT_MAX_ROWS", "100000")))
     embedding_backend: str = field(default_factory=lambda: _env("EMBEDDING_BACKEND", "default"))
 
 

@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings, get_settings
 from app.db.admin import create_admin_sessionmaker
-from app.db.business import create_readonly_engine
+from app.db.business import create_readonly_engine, create_write_engine
 from app.llm import create_llm
 from app.pipeline.orchestrator import LLMFactory, QueryOrchestrator
 from app.services.config_manager import ConfigManager
@@ -20,6 +20,7 @@ from app.services.guardrails_manager import GuardrailsManager
 from app.services.log_service import LogService
 from app.services.schema_manager import SchemaManager
 from app.services.semantic_cache import SemanticCache
+from app.services.table_importer import TableImporter
 from app.services.vector_store import ExampleVectorStore
 
 log = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class Container:
     vector_store: ExampleVectorStore
     examples: ExamplesManager
     orchestrator: QueryOrchestrator
+    table_importer: TableImporter | None = None
 
 
 def build_container(settings: Settings | None = None, llm_factory: LLMFactory | None = None,
@@ -66,7 +68,9 @@ def build_container(settings: Settings | None = None, llm_factory: LLMFactory | 
         schema_manager=schema, guardrails=guardrails, config=config, logs=logs, vector_store=store,
         readonly_engine=engine, llm_factory=llm_factory or (lambda cfg: create_llm(cfg, st)), settings=st,
         domain_notes=notes_path.read_text() if notes_path.exists() else "", summarize=summarize, cache=cache)
-    return Container(st, sessions, engine, schema, guardrails, config, logs, store, examples, orchestrator)
+    importer = TableImporter(create_write_engine(st.business_db_path), sessions, schema, max_rows=st.import_max_rows) \
+        if st.allow_table_import else None
+    return Container(st, sessions, engine, schema, guardrails, config, logs, store, examples, orchestrator, importer)
 
 
 def get_container(request: Request) -> Container:

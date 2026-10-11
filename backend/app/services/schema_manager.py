@@ -110,3 +110,18 @@ class SchemaManager:
             s.merge(TableMeta(table_name=upd.table, description=upd.description))
             s.commit()
         return self.get_table(upd.table)
+
+    # ---- imported-table metadata (used by the CSV importer) ----
+    def save_table_metadata(self, table: str, description: str, columns: list[tuple[str, str, bool]]) -> None:
+        """Upsert table + column descriptions/sensitive flags in one transaction. ``columns`` = (name, description, sensitive)."""
+        with self._sessions() as s:
+            s.merge(TableMeta(table_name=table, description=description))
+            for name, desc, sensitive in columns:
+                s.merge(ColumnMeta(table_name=table, column_name=name, description=desc, sensitive=sensitive))
+            s.commit()
+
+    def delete_table_metadata(self, table: str) -> None:
+        with self._sessions() as s:
+            s.query(ColumnMeta).filter(ColumnMeta.table_name == table).delete()
+            s.query(TableMeta).filter(TableMeta.table_name == table).delete()
+            s.commit()

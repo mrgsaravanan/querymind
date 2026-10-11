@@ -1,4 +1,5 @@
 import type {
+  ImportConfig, ImportResult, ImportedTableInfo, PreviewResponse,
   ExampleHit, ExampleIn, ExampleRecord, GuardrailConfig, ModelConfig, QueryLogEntry, QueryResponse, TableInfo,
 } from "./types";
 
@@ -49,6 +50,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+/** Multipart upload (the browser sets the boundary, so no JSON Content-Type header). */
+async function upload<T>(path: string, form: FormData): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { method: "POST", body: form, cache: "no-store" });
+  } catch {
+    throw new ApiError(0, `Cannot reach the API at ${API_BASE}. Is the backend running?`);
+  }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = body?.error ? `${body.error}${body.detail ? ` — ${describeDetail(body.detail)}` : ""}` : `Request failed (${res.status})`;
+    throw new ApiError(res.status, msg, body?.detail);
+  }
+  return body as T;
+}
+
 const json = (method: string, data: unknown): RequestInit => ({ method, body: JSON.stringify(data) });
 
 export async function runQuery(question: string, clarification?: string, targetDialect?: string): Promise<QueryResponse> {
@@ -82,6 +99,14 @@ export const api = {
 
   guardrails: () => request<GuardrailConfig>("/admin/guardrails"),
   saveGuardrails: (g: GuardrailConfig) => request<GuardrailConfig>("/admin/guardrails", json("PUT", g)),
+
+  previewCsv: (file: File) => { const f = new FormData(); f.append("file", file); return upload<PreviewResponse>("/admin/tables/preview", f); },
+  importCsv: (file: File, config: ImportConfig) => {
+    const f = new FormData(); f.append("file", file); f.append("config", JSON.stringify(config));
+    return upload<ImportResult>("/admin/tables/import", f);
+  },
+  importedTables: () => request<ImportedTableInfo[]>("/admin/tables/imported"),
+  deleteImported: (name: string) => request<void>(`/admin/tables/${encodeURIComponent(name)}`, { method: "DELETE" }),
 
   config: () => request<ModelConfig>("/admin/config"),
   saveConfig: (c: ModelConfig) => request<ModelConfig>("/admin/config", json("PUT", c)),
