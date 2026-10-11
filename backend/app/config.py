@@ -28,6 +28,11 @@ class Settings:
     admin_db_path: Path = field(default_factory=lambda: Path(_env("ADMIN_DB_PATH", str(BACKEND_DIR / "data" / "admin.db"))))
     chroma_path: Path = field(default_factory=lambda: Path(_env("CHROMA_PATH", str(BACKEND_DIR / "data" / "chroma"))))
     examples_seed_path: Path = field(default_factory=lambda: BACKEND_DIR / "data" / "examples_seed.json")
+    admin_token: str = field(default_factory=lambda: _env("ADMIN_TOKEN", ""))                 # empty = admin API open (local dev)
+    rate_limit_per_hour: int = field(default_factory=lambda: int(_env("RATE_LIMIT_PER_HOUR", "0")))   # per client IP; 0 = off
+    daily_query_cap: int = field(default_factory=lambda: int(_env("DAILY_QUERY_CAP", "0")))           # all visitors combined; 0 = off
+    rate_limit_proxy_hops: int = field(default_factory=lambda: int(_env("RATE_LIMIT_PROXY_HOPS", "1")))  # trusted proxies in front
+    cors_origin_regex: str = field(default_factory=lambda: _env("CORS_ORIGIN_REGEX", ""))
     cors_origins: tuple[str, ...] = field(default_factory=lambda: tuple(_env("CORS_ORIGINS", "http://localhost:3000").split(",")))
 
     # LLM defaults (overridable at runtime from the Model Config panel)

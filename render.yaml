@@ -1,0 +1,39 @@
+# Render Blueprint for the QueryMind API. The web UI is deployed separately on Vercel (see DEPLOY.md).
+services:
+  - type: web
+    name: querymind-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: standard            # 2 GB RAM: the embedding model + ChromaDB use ~0.9 GB, so the 512 MB tier would crash
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:                     # persistent: admin.db (logs, edits), business.db, the vector index
+      name: querymind-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: LLM_MODEL
+        value: claude-sonnet-4-20250514
+      - key: ANTHROPIC_API_KEY
+        sync: false           # you enter this in the Render dashboard; never commit it
+      - key: ADMIN_TOKEN
+        generateValue: true   # Render generates a random secret; read it in the dashboard to unlock the Admin UI
+      - key: CORS_ORIGINS
+        sync: false           # your Vercel URL, e.g. https://querymind.vercel.app
+      - key: CORS_ORIGIN_REGEX
+        value: ""             # optional: allow Vercel preview URLs, e.g. https://querymind-[a-z0-9-]+\.vercel\.app
+      - key: BUSINESS_DB_PATH
+        value: /data/business.db
+      - key: ADMIN_DB_PATH
+        value: /data/admin.db
+      - key: CHROMA_PATH
+        value: /data/chroma
+      - key: RATE_LIMIT_PER_HOUR   # questions per visitor per hour
+        value: "30"
+      - key: DAILY_QUERY_CAP       # all visitors combined: a hard ceiling on API spend
+        value: "500"
+      - key: RATE_LIMIT_PROXY_HOPS
+        value: "1"

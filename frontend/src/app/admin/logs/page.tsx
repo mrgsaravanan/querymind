@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Card, ErrorBox, PageHeader, Spinner, inputCls } from "@/components/ui";
-import { api } from "@/lib/api";
+import { useToast } from "@/components/Toast";
+import { ApiError, api } from "@/lib/api";
 import type { QueryLogEntry } from "@/lib/types";
 
 const STATUSES = ["success", "unsupported", "validation_failed", "execution_error", "error"];
@@ -11,6 +12,7 @@ const badge: Record<string, string> = {
 };
 
 export default function LogsPage() {
+  const toast = useToast();
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
   const [from, setFrom] = useState("");
@@ -37,7 +39,7 @@ export default function LogsPage() {
   return (
     <>
       <PageHeader title="Query Logs" subtitle="Every question, the SQL that ran, outcome, latency and row count."
-        actions={<a href={api.logsExportUrl(params())} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Export CSV</a>} />
+        actions={<Button variant="ghost" onClick={() => api.downloadLogsCsv(params()).catch((e) => toast.push("error", e instanceof ApiError ? e.message : "Export failed"))}>Export CSV</Button>} />
       <Card className="mb-4">
         <form className="grid gap-3 md:grid-cols-5" onSubmit={(e) => { e.preventDefault(); load(); }}>
           <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">

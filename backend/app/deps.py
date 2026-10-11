@@ -19,6 +19,7 @@ from app.services.examples_manager import ExamplesManager
 from app.services.guardrails_manager import GuardrailsManager
 from app.services.log_service import LogService
 from app.services.schema_manager import SchemaManager
+from app.services.rate_limit import RateLimiter
 from app.services.semantic_cache import SemanticCache
 from app.services.table_importer import TableImporter
 from app.services.vector_store import ExampleVectorStore
@@ -40,6 +41,7 @@ class Container:
     examples: ExamplesManager
     orchestrator: QueryOrchestrator
     table_importer: TableImporter | None = None
+    rate_limiter: RateLimiter | None = None
 
 
 def build_container(settings: Settings | None = None, llm_factory: LLMFactory | None = None,
@@ -70,8 +72,22 @@ def build_container(settings: Settings | None = None, llm_factory: LLMFactory | 
         domain_notes=notes_path.read_text() if notes_path.exists() else "", summarize=summarize, cache=cache)
     importer = TableImporter(create_write_engine(st.business_db_path), sessions, schema, max_rows=st.import_max_rows) \
         if st.allow_table_import else None
-    return Container(st, sessions, engine, schema, guardrails, config, logs, store, examples, orchestrator, importer)
+    return Container(st, sessions, engine, schema, guardrails, config, logs, store, examples, orchestrator, importer,
+                     RateLimiter(st.rate_limit_per_hour, st.daily_query_cap))
 
 
 def get_container(request: Request) -> Container:
     return request.app.state.container
+
+
+def require_admin(request: Request) -> None:
+    """Protect /admin/*: if ADMIN_TOKEN is set, callers must send it in the X-Admin-Token header."""
+    import secrets
+
+    from fastapi import HTTPException
+    expected = request.app.state.container.settings.admin_token
+    if not expected:
+        return
+    supplied = request.headers.get("x-admin-token", "")
+    if not secrets.compare_digest(supplied.encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="Admin token required or incorrect.")

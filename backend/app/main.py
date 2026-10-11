@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import query as query_api
 from app.config import Settings
-from app.deps import Container, build_container
+from app.deps import Container, build_container, require_admin
 from app.pipeline.orchestrator import LLMFactory
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -23,7 +23,8 @@ def create_app(settings: Settings | None = None, llm_factory: LLMFactory | None 
     container = build_container(settings, llm_factory)
     app = FastAPI(title="QueryMind AI", version="1.0.0")
     app.state.container = container
-    app.add_middleware(CORSMiddleware, allow_origins=list(container.settings.cors_origins), allow_methods=["*"],
+    app.add_middleware(CORSMiddleware, allow_origins=list(container.settings.cors_origins),
+                       allow_origin_regex=container.settings.cors_origin_regex or None, allow_methods=["*"],
                        allow_headers=["*"])
 
     @app.exception_handler(StarletteHTTPException)
@@ -76,7 +77,7 @@ def _mount_admin(app: FastAPI) -> None:
         from app.api.admin import router as admin_router
     except ImportError:
         return
-    app.include_router(admin_router, prefix="/admin")
+    app.include_router(admin_router, prefix="/admin", dependencies=[Depends(require_admin)])
 
 
 def app_factory() -> FastAPI:  # for `uvicorn app.main:app_factory --factory`

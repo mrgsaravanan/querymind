@@ -113,6 +113,10 @@ SELECT customers.id AS id, customers.name AS name, customers.country AS country,
 ```
 and `SELECT email FROM customers` is rejected: *"Column 'customers.email' is sensitive and cannot be queried."*
 
+## Deploying to the cloud (Vercel + Render)
+
+The web UI deploys to **Vercel**; the API runs as a container on **Render** (it needs a persistent disk, which Vercel does not offer). The repo includes a [`Dockerfile`](backend/Dockerfile), a [`render.yaml`](render.yaml) blueprint and step-by-step instructions in **[DEPLOY.md](DEPLOY.md)**. Public deployments need an Anthropic API key (the subscription CLI login is personal) and add three protections, all off by default for local use: an **admin token** (`ADMIN_TOKEN`) that locks the Admin UI and `/admin/*`, a **per-visitor rate limit** and a **daily question cap** (`RATE_LIMIT_PER_HOUR`, `DAILY_QUERY_CAP`) to protect API spend, and configurable **CORS**.
+
 ## Admin UI walkthrough
 
 | Panel | What it does |
@@ -210,7 +214,7 @@ Exact/Semantic Match are low by design: the model's SQL is correct but written d
 backend/app/{schemas,pipeline,llm,services,api,db}   typed stages, providers, admin services, routers
 backend/data/                                          schema.sql, seed_db.py, data_dictionary.md, examples_seed.json, domain_notes.md
 backend/eval/                                          test_set.json, guardrail_attacks.json, run_eval.py, metrics.py, report template
-backend/tests/                                         offline pytest suite (190 tests)
+backend/tests/                                         offline pytest suite (220 tests)
 frontend/src/app/                                      chat page + admin/{schema,examples,logs,guardrails,model}
 reports/                                               generated evaluation reports
 ```
@@ -225,7 +229,7 @@ reports/                                               generated evaluation repo
 - **Sensitive-column detection is by flag, not by content:** a sensitive value reachable through a differently named column would not be caught.
 - **Date handling relies on the fixed reference date** passed in the prompt; relative phrases beyond "this/last month, quarter, year" and "last N days" are interpreted by the model.
 - **Explain mode** shows the one-to-two sentence explanation the generator already returns, not a separate step-by-step breakdown.
-- **No authentication** on the API or Admin UI, and the CSV importer can create and delete the tables it imported. Do not expose it beyond a trusted network; add auth (or set `ALLOW_TABLE_IMPORT=false`) before any real deployment.
+- **Authentication is a single shared admin token** (no per-user accounts), and the public Ask endpoint has only IP-based rate limiting. Without `ADMIN_TOKEN` the API and Admin UI are open, and the CSV importer can create and delete the tables it imported. For any public deployment set `ADMIN_TOKEN` (and consider `ALLOW_TABLE_IMPORT=false`); see DEPLOY.md.
 - **CSV import is SQLite-only and basic:** one table per file, no primary/foreign keys or indexes, no automatic date-format conversion, no append-to-existing mode.
 - **Query timeouts** are implemented for SQLite only.
 - **Future work:** an LLM-assisted linker, per-user permissions and row-level security, answer feedback ("was this right?") feeding the examples library, streaming responses, PostgreSQL/MySQL read-only roles.
