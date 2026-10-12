@@ -115,7 +115,7 @@ and `SELECT email FROM customers` is rejected: *"Column 'customers.email' is sen
 
 ## Deploying to the cloud (Vercel + Render)
 
-The web UI deploys to **Vercel**; the API runs as a container on **Render** (it needs a persistent disk, which Vercel does not offer). The repo includes a [`Dockerfile`](backend/Dockerfile), a [`render.yaml`](render.yaml) blueprint and step-by-step instructions in **[DEPLOY.md](DEPLOY.md)**. Public deployments need an Anthropic API key (the subscription CLI login is personal) and add three protections, all off by default for local use: an **admin token** (`ADMIN_TOKEN`) that locks the Admin UI and `/admin/*`, a **per-visitor rate limit** and a **daily question cap** (`RATE_LIMIT_PER_HOUR`, `DAILY_QUERY_CAP`) to protect API spend, and configurable **CORS**.
+The web UI deploys to **Vercel**; the API runs as a container on **Render** (it needs a persistent disk, which Vercel does not offer). The repo includes a [`Dockerfile`](backend/Dockerfile), a [`render.yaml`](render.yaml) blueprint and step-by-step instructions in **[DEPLOY.md](DEPLOY.md)**. For a single cheap server instead, **[HETZNER.md](HETZNER.md)** runs the whole stack (UI, API, automatic HTTPS) with `docker compose` on one Hetzner VM. Public deployments need an Anthropic API key (the subscription CLI login is personal) and add three protections, all off by default for local use: an **admin token** (`ADMIN_TOKEN`) that locks the Admin UI and `/admin/*`, a **per-visitor rate limit** and a **daily question cap** (`RATE_LIMIT_PER_HOUR`, `DAILY_QUERY_CAP`) to protect API spend, and configurable **CORS**.
 
 ## Admin UI walkthrough
 

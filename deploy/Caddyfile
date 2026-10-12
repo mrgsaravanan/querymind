@@ -1,0 +1,14 @@
+# Caddy obtains and renews a free HTTPS certificate automatically for {$DOMAIN}.
+{$DOMAIN} {
+	encode gzip
+
+	# /api/* -> the FastAPI backend (the /api prefix is removed before forwarding)
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	# everything else -> the Next.js web UI
+	handle {
+		reverse_proxy web:3000
+	}
+}

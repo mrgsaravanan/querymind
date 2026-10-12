@@ -1,5 +1,7 @@
 # Deploying QueryMind: Vercel (web UI) + Render (API)
 
+> **Prefer one cheap server instead?** See **[HETZNER.md](HETZNER.md)**: everything (UI, API, HTTPS) on a single Hetzner VM with `docker compose`.
+
 ```
 Browser ──▶ Vercel  (Next.js web UI, free/Pro)
               │  NEXT_PUBLIC_API_URL

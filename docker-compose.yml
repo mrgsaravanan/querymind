@@ -1,0 +1,54 @@
+# Whole stack on one server (e.g. a Hetzner Cloud VM with 4 GB RAM): web UI + API + automatic HTTPS.
+# Usage:  cp deploy/env.example .env  ->  edit .env  ->  docker compose up -d --build     (see HETZNER.md)
+services:
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      LLM_PROVIDER: anthropic
+      BUSINESS_DB_PATH: /data/business.db
+      ADMIN_DB_PATH: /data/admin.db
+      CHROMA_PATH: /data/chroma
+      CORS_ORIGINS: https://${DOMAIN}
+      RATE_LIMIT_PROXY_HOPS: "1"      # Caddy is the single proxy in front; it overwrites any client-supplied X-Forwarded-For
+    volumes:
+      - querymind_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 120s
+      retries: 3
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api     # baked into the UI at build time
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+
+volumes:
+  querymind_data:
+    name: querymind_data
+  caddy_data:
+  caddy_config:
