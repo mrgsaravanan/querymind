@@ -29,6 +29,8 @@ NL question
 
 Every stage has typed Pydantic input/output models (`backend/app/schemas/`), takes its dependencies by injection, and can be called and unit-tested alone. The orchestrator wires them, records per-stage timings and writes a log row for every outcome.
 
+**Full design write-up with diagrams: [ARCHITECTURE.md](ARCHITECTURE.md).**
+
 ## Domain, dialect and key decisions
 
 | Decision | Choice | Why |
@@ -209,6 +211,8 @@ Exact/Semantic Match are low by design: the model's SQL is correct but written d
 | Voice input | Microphone button using the Web Speech API (shown only in browsers that support it, e.g. Chrome). |
 
 ## Project layout
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for how the parts fit together. Folder map:
 
 ```
 backend/app/{schemas,pipeline,llm,services,api,db}   typed stages, providers, admin services, routers
